@@ -150,7 +150,7 @@ export default function App() {
       .page {
         width: 8.5in;
         height: 11in;
-        padding-top: 0.5in;
+        padding-top: calc(0.5in + 2mm);
         padding-left: 0.28in;
         padding-right: 0.28in;
         page-break-after: always;
@@ -164,7 +164,7 @@ export default function App() {
         width: 1.75in;
         height: 0.5in;
         margin-right: 0.3in;
-        padding: 2px 3px;
+        padding: 4px 4px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -175,7 +175,7 @@ export default function App() {
         margin-right: 0;
       }
       .barcode {
-        height: 26px;
+        height: 22px;
         width: 100%;
       }
       .label-bottom {
@@ -186,20 +186,20 @@ export default function App() {
         align-items: center;
       }
       .sku {
-        font-size: 7px;
+        font-size: 6px;
         line-height: 1;
       }
       .desc {
-        font-size: 6px;
+        font-size: 5px;
         text-align: center;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        max-width: 0.7in;
+        max-width: 0.6in;
         line-height: 1;
       }
       .price {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: bold;
         line-height: 1;
         white-space: nowrap;
@@ -248,7 +248,7 @@ export default function App() {
       const labels = ${JSON.stringify(labelItems.map(it => it.sku))};
       document.querySelectorAll('.barcode').forEach((el) => {
         const idx = parseInt(el.id.replace('bc', ''));
-        if(labels[idx]) JsBarcode(el, labels[idx], {format:'CODE128',height:24,width:1.5,displayValue:false,margin:0});
+        if(labels[idx]) JsBarcode(el, labels[idx], {format:'CODE128',height:20,width:1.5,displayValue:false,margin:0});
       });
       window.onload = () => window.print();
     </script></body></html>`;
