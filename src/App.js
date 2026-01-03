@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxsuDbWxVrO82PvWAfdxK49hkLUYfelSh_aEj1MmNk_Jc4SX_DYYawZeZJ9HSkKfrwB/exec';
@@ -133,37 +134,125 @@ export default function App() {
     let html = `<!DOCTYPE html><html><head><title>Labels - Two Girls Gift Shop</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
-      @page{size:letter;margin:0.5in 0.3in}
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:Arial,sans-serif}
-      .page{width:8in;height:10in;display:flex;flex-wrap:wrap;align-content:flex-start}
-      .label{width:1.75in;height:0.5in;padding:2px 4px;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;border:1px dotted #ccc}
-      .barcode{height:20px;width:100%}
-      .price{font-size:11px;font-weight:bold}
-      .sku{font-size:7px}
-      .desc{font-size:6px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:100%}
+      @page {
+        size: letter;
+        margin: 0;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .page {
+        width: 8.5in;
+        height: 11in;
+        padding-top: 0.5in;
+        padding-left: 0.28in;
+        padding-right: 0.28in;
+        page-break-after: always;
+      }
+      .row {
+        display: flex;
+        height: 0.5in;
+        margin: 0;
+      }
+      .label {
+        width: 1.75in;
+        height: 0.5in;
+        margin-right: 0.3in;
+        padding: 1px 2px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        overflow: hidden;
+      }
+      .label:last-child {
+        margin-right: 0;
+      }
+      .label-left {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+      }
+      .barcode {
+        height: 16px;
+        width: 100%;
+      }
+      .sku {
+        font-size: 6px;
+        line-height: 1;
+      }
+      .desc {
+        font-size: 5px;
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        line-height: 1;
+      }
+      .price {
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 1;
+        padding-left: 2px;
+        white-space: nowrap;
+      }
+      @media print {
+        .page {
+          page-break-after: always;
+        }
+        .page:last-child {
+          page-break-after: avoid;
+        }
+      }
     </style></head><body>`;
 
-    for (let p = 0; p < Math.ceil(labelItems.length / labelsPerPage); p++) {
+    const totalPages = Math.ceil(labelItems.length / labelsPerPage);
+    
+    for (let p = 0; p < totalPages; p++) {
       html += '<div class="page">';
-      const pageItems = labelItems.slice(p * labelsPerPage, (p + 1) * labelsPerPage);
-      pageItems.forEach((item, i) => {
-        html += `<div class="label">
-          <svg class="barcode" id="bc${p}_${i}"></svg>
-          <div class="price">$${parseFloat(item.price).toFixed(2)}</div>
-          <div class="sku">${item.sku}</div>
-          <div class="desc">${item.labelDesc || item.name}</div>
-        </div>`;
-      });
+      
+      for (let row = 0; row < 20; row++) {
+        html += '<div class="row">';
+        
+        for (let col = 0; col < 4; col++) {
+          const idx = p * labelsPerPage + row * 4 + col;
+          const item = labelItems[idx];
+          
+          if (item) {
+            html += `<div class="label">
+              <svg class="barcode" id="bc${idx}"></svg>
+              <div class="price">${parseFloat(item.price).toFixed(2)}</div>
+              <div class="sku">${item.sku}</div>
+              <div class="desc">${item.labelDesc || item.name}</div>
+            </div>`;
+          } else {
+            html += '<div class="label"></div>';
+          }
+        }
+        
+        html += '</div>';
+      }
+      
       html += '</div>';
     }
 
     html += `<script>
-      document.querySelectorAll('.barcode').forEach((el,i)=>{
-        const labels = ${JSON.stringify(labelItems.map(it => it.sku))};
-        if(labels[i]) JsBarcode(el, labels[i], {format:'CODE128',height:18,width:1,displayValue:false,margin:0});
+      const labels = ${JSON.stringify(labelItems.map(it => it.sku))};
+      document.querySelectorAll('.barcode').forEach((el) => {
+        const idx = parseInt(el.id.replace('bc', ''));
+        if(labels[idx]) JsBarcode(el, labels[idx], {format:'CODE128',height:14,width:1,displayValue:false,margin:0});
       });
-      window.onload=()=>window.print();
+      window.onload = () => window.print();
     </script></body></html>`;
 
     const win = window.open('', '_blank');
