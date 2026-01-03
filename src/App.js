@@ -39,6 +39,8 @@ export default function App() {
   const [editingVendor, setEditingVendor] = useState(null);
   const [newVendor, setNewVendor] = useState({ name: '', code: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [adminEntry, setAdminEntry] = useState(false);
+  const [labelStartPosition, setLabelStartPosition] = useState(1);
 
   const loadVendors = async () => {
     setLoading(true);
@@ -94,7 +96,7 @@ export default function App() {
   };
 
   const addItem = () => {
-    setItems([...items, { name: '', description: '', labelDesc: '', price: '', quantity: 1, category: '', sku: '' }]);
+    setItems([...items, { name: '', description: '', labelDesc: '', price: '', quantity: 1, category: '', sku: '', vendorCode: adminEntry ? '' : selectedVendor?.code || '' }]);
   };
 
   const updateItem = (idx, field, value) => {
@@ -112,7 +114,10 @@ export default function App() {
     const newItems = [...items];
     for (let i = 0; i < newItems.length; i++) {
       if (!newItems[i].sku && newItems[i].name) {
-        newItems[i].sku = await getNextSku(selectedVendor.code);
+        const code = adminEntry ? newItems[i].vendorCode : selectedVendor.code;
+        if (code) {
+          newItems[i].sku = await getNextSku(code);
+        }
       }
     }
     setItems(newItems);
@@ -264,17 +269,21 @@ export default function App() {
 
     setSubmitting(true);
     try {
-      const submitItems = validItems.map(item => ({
-        vendorName: selectedVendor.name,
-        vendorCode: selectedVendor.code,
-        itemName: item.name,
-        description: item.description,
-        labelDesc: item.labelDesc,
-        category: item.category,
-        price: item.price,
-        quantity: item.quantity,
-        sku: item.sku
-      }));
+      const submitItems = validItems.map(item => {
+        const vendorCode = adminEntry ? item.vendorCode : selectedVendor.code;
+        const vendor = vendors.find(v => v.code === vendorCode);
+        return {
+          vendorName: vendor ? vendor.name : vendorCode,
+          vendorCode: vendorCode,
+          itemName: item.name,
+          description: item.description,
+          labelDesc: item.labelDesc,
+          category: item.category,
+          price: item.price,
+          quantity: item.quantity,
+          sku: item.sku
+        };
+      });
 
       await api('submitInventory', { items: submitItems });
       setItems([]);
@@ -358,12 +367,97 @@ export default function App() {
   }
 
   if (screen === 'admin') {
+    if (adminEntry) {
+      return (
+        <div className="min-h-screen bg-gray-50 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h1 className="text-xl font-bold text-purple-600">Admin Inventory Entry</h1>
+                <p className="text-sm text-gray-500">Add items for any vendor</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setAdminEntry(false); setItems([]); setLabelStartPosition(1); }} className={btnSecondary}>Back to Dashboard</button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4 mb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-bold">Inventory Items</h2>
+                <button onClick={addItem} className={btnPrimary}>+ Add Item</button>
+              </div>
+
+              {items.map((item, idx) => (
+                <div key={idx} className="border rounded p-3 mb-3 bg-gray-50">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+                    <select value={item.vendorCode} onChange={e => updateItem(idx, 'vendorCode', e.target.value)} className={inputStyle}>
+                      <option value="">Select Vendor *</option>
+                      {vendors.map(v => <option key={v.code} value={v.code}>{v.name} ({v.code})</option>)}
+                    </select>
+                    <input placeholder="Item Name *" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} className={inputStyle} />
+                    <input placeholder="Price *" type="number" step="0.01" value={item.price} onChange={e => updateItem(idx, 'price', e.target.value)} className={inputStyle} />
+                    <input placeholder="Quantity" type="number" min="1" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value) || 1)} className={inputStyle} />
+                  </div>
+                  <textarea placeholder="Full Description" value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)} className={inputStyle + " mb-2"} rows={2} />
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <input placeholder="Label Description (short)" maxLength={30} value={item.labelDesc} onChange={e => updateItem(idx, 'labelDesc', e.target.value)} className={inputStyle} />
+                    <select value={item.category} onChange={e => updateItem(idx, 'category', e.target.value)} className={inputStyle}>
+                      <option value="">Select Category</option>
+                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <div className="flex items-center gap-2">
+                      <input placeholder="SKU" value={item.sku} readOnly className={inputStyle + " bg-gray-100 font-mono"} />
+                      <button onClick={() => removeItem(idx)} className="text-red-500 text-xl">&times;</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {!items.length && <p className="text-center text-gray-400 py-8">Click "+ Add Item" to start entering inventory</p>}
+            </div>
+
+            {items.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-4 mb-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">Start at label #:</label>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="80" 
+                      value={labelStartPosition} 
+                      onChange={e => setLabelStartPosition(Math.max(1, Math.min(80, parseInt(e.target.value) || 1)))} 
+                      className="w-20 p-2 border rounded text-sm"
+                    />
+                    <span className="text-xs text-gray-500">(1-80, left to right, top to bottom)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {items.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <button onClick={generateSkus} disabled={submitting || !items.every(i => i.vendorCode)} className={btnPrimary}>
+                  {submitting ? 'Generating...' : 'Generate SKUs'}
+                </button>
+                <button onClick={generateLabels} disabled={!items.some(i => i.sku)} className={btnPrimary}>Print Labels</button>
+                <button onClick={submitInventory} disabled={!items.some(i => i.sku) || submitting} className={btnPrimary}>
+                  {submitting ? 'Submitting...' : 'Submit Inventory'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-purple-600">Admin Dashboard</h1>
             <div className="flex gap-2">
+              <button onClick={() => { setAdminEntry(true); setItems([]); }} className={btnPrimary}>+ Add Inventory</button>
               <button onClick={() => Promise.all([loadVendors(), loadSkus(), loadSubmissions()])} className={btnSecondary}>Refresh</button>
               <button onClick={() => { setScreen('login'); setIsAdmin(false); }} className={btnSecondary}>Logout</button>
             </div>
@@ -533,6 +627,25 @@ export default function App() {
 
             {!items.length && <p className="text-center text-gray-400 py-8">Click "+ Add Item" to start entering inventory</p>}
           </div>
+
+          {items.length > 0 && (
+            <div className="bg-white rounded-lg shadow p-4 mb-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">Start at label #:</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="80" 
+                    value={labelStartPosition} 
+                    onChange={e => setLabelStartPosition(Math.max(1, Math.min(80, parseInt(e.target.value) || 1)))} 
+                    className="w-20 p-2 border rounded text-sm"
+                  />
+                  <span className="text-xs text-gray-500">(1-80, left to right, top to bottom)</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {items.length > 0 && (
             <div className="flex flex-wrap gap-2">
