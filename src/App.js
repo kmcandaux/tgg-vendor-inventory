@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxsuDbWxVrO82PvWAfdxK49hkLUYfelSh_aEj1MmNk_Jc4SX_DYYawZeZJ9HSkKfrwB/exec';
@@ -165,45 +164,44 @@ export default function App() {
         width: 1.75in;
         height: 0.5in;
         margin-right: 0.3in;
-        padding: 1px 2px;
+        padding: 2px 3px;
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
+        justify-content: space-between;
         align-items: center;
         overflow: hidden;
       }
       .label:last-child {
         margin-right: 0;
       }
-      .label-left {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-      }
       .barcode {
-        height: 16px;
+        height: 26px;
         width: 100%;
       }
+      .label-bottom {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
       .sku {
-        font-size: 6px;
+        font-size: 7px;
         line-height: 1;
       }
       .desc {
-        font-size: 5px;
+        font-size: 6px;
         text-align: center;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        max-width: 100%;
+        max-width: 0.7in;
         line-height: 1;
       }
       .price {
-        font-size: 14px;
+        font-size: 11px;
         font-weight: bold;
         line-height: 1;
-        padding-left: 2px;
         white-space: nowrap;
       }
       @media print {
@@ -250,7 +248,7 @@ export default function App() {
       const labels = ${JSON.stringify(labelItems.map(it => it.sku))};
       document.querySelectorAll('.barcode').forEach((el) => {
         const idx = parseInt(el.id.replace('bc', ''));
-        if(labels[idx]) JsBarcode(el, labels[idx], {format:'CODE128',height:14,width:1,displayValue:false,margin:0});
+        if(labels[idx]) JsBarcode(el, labels[idx], {format:'CODE128',height:24,width:1.5,displayValue:false,margin:0});
       });
       window.onload = () => window.print();
     </script></body></html>`;
